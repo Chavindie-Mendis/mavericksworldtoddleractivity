@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Wand2, ClipboardCopy, X, Play, Pause, RotateCcw, Clock } from "lucide-react";
+import { ClipboardCopy, X, Play, Pause, RotateCcw, Clock } from "lucide-react";
 import {
   AGES, ENERGIES, ENVS, SLOT_LABEL, generateRoutine, routineToMarkdown, dots,
   type Age, type Energy, type Env, type Activity,
@@ -197,7 +197,7 @@ function Index() {
             {ENVS.map((e) => <Chip key={e.id} active={env === e.id} onClick={() => setEnv(e.id)}>{e.label}</Chip>)}
           </Section>
           <button onClick={generate} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-primary px-6 py-5 font-display text-xl font-bold text-primary-foreground animate-glow transition-transform hover:scale-[1.01] active:scale-[0.99]">
-            <Wand2 className="h-6 w-6" /> 🪄 Generate Adventure Routine
+            🪄 Generate Adventure Routine
           </button>
         </section>
 
