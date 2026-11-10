@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { X, Play, Pause, RotateCcw, Clock } from "lucide-react";
 import {
-  AGES, ENERGIES, ENVS, SLOT_LABEL, generateRoutine, routineToMarkdown, dots,
-  type Age, type Energy, type Env, type Activity,
+  AGES, ENERGIES, ENVS, SLOT_LABEL, EMERGENCY_RESETS, generateRoutine, routineToMarkdown, dots,
+  type Age, type Energy, type Env, type Activity, type EmergencyReset,
 } from "@/lib/routines";
 import { cn } from "@/lib/utils";
 
@@ -78,15 +78,11 @@ function ActivityCard({ a, age, i }: { a: Activity; age: Age; i: number }) {
   );
 }
 
-const TAMER_STEPS = [
-  { at: 0, text: "Get low and calm. Wrap them firmly in a blanket like a burrito, arms snug." },
-  { at: 45, text: "Press slowly down the burrito from shoulders to feet, counting softly to 10." },
-  { at: 90, text: "Hand them an ice cube (or cold cup). Squeeze it together — 'rescue the ice!'" },
-  { at: 135, text: "Breathe together: smell the flower, blow out the candle. Repeat 5 times." },
-];
-
 function TantrumTamer({ onClose }: { onClose: () => void }) {
   const TOTAL = 180;
+  const [reset] = useState<EmergencyReset>(
+    () => EMERGENCY_RESETS[Math.floor(Math.random() * EMERGENCY_RESETS.length)]!,
+  );
   const [left, setLeft] = useState(TOTAL);
   const [running, setRunning] = useState(true);
   useEffect(() => {
@@ -100,7 +96,7 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   const elapsed = TOTAL - left;
-  const current = [...TAMER_STEPS].reverse().find((s) => elapsed >= s.at)!;
+  const current = [...reset.steps].reverse().find((s) => elapsed >= s.at)!;
   const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, "0");
   return (
     <div role="dialog" aria-modal="true" aria-label="Tantrum Tamer" className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-background">
@@ -112,8 +108,8 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
       </div>
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-6 p-6 text-center">
         <div>
-          <h2 className="font-display text-3xl font-bold">Heavy Blanket Burrito Press</h2>
-          <p className="text-muted-foreground">3 minutes · Zero prep · You've got this 💛</p>
+          <h2 className="font-display text-3xl font-bold">{reset.icon} {reset.title}</h2>
+          <p className="text-muted-foreground">3 minutes · Zero prep · {reset.benefit} · You've got this 💛</p>
         </div>
         <div className="relative grid h-56 w-56 place-items-center">
           <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
@@ -127,7 +123,7 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
           {left > 0 ? current.text : "Done! Offer a hug and a drink of water."}
         </p>
         <ol className="grid w-full gap-2 text-left text-sm">
-          {TAMER_STEPS.map((s, i) => (
+          {reset.steps.map((s, i) => (
             <li key={i} className={cn("rounded-2xl border p-3", s === current && left > 0 ? "border-destructive bg-destructive/10 font-semibold" : "border-border text-muted-foreground")}>
               {i + 1}. {s.text}
             </li>
@@ -139,6 +135,9 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
           </button>
           <button onClick={() => { setLeft(TOTAL); setRunning(true); }} className="flex items-center gap-2 rounded-full border-2 border-border px-6 py-3 font-bold">
             <RotateCcw className="h-4 w-4" />Restart
+          </button>
+          <button onClick={onClose} className="flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-bold text-primary-foreground">
+            ✅ Close / Defused
           </button>
         </div>
       </div>
