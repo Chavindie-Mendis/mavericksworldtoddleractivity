@@ -81,7 +81,7 @@ export function generateRoutine(energy: Energy, env: Env, seed = 0): Activity[] 
     const pool = A.filter((a) => a.slot === slot);
     const best = Math.max(...pool.map((a) => score(a, energy, env)));
     const top = pool.filter((a) => score(a, energy, env) === best);
-    return top[seed % top.length];
+    return top[seed % top.length]!;
   });
 }
 
