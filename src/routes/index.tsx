@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardCopy, X, Play, Pause, RotateCcw, Clock } from "lucide-react";
+import { X, Play, Pause, RotateCcw, Clock } from "lucide-react";
 import {
   AGES, ENERGIES, ENVS, SLOT_LABEL, generateRoutine, routineToMarkdown, dots,
   type Age, type Energy, type Env, type Activity,
@@ -206,7 +206,7 @@ function Index() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-display text-2xl font-bold">Today's adventure ✨</h2>
               <button onClick={copy} className="flex items-center justify-center gap-2 rounded-full border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary hover:text-primary-foreground">
-                <ClipboardCopy className="h-4 w-4" /> 📋 Copy Schedule for Caregiver / Obsidian
+                📋 Copy Schedule for Caregiver / Obsidian
               </button>
             </div>
             <div className="grid gap-5 md:grid-cols-3">
