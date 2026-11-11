@@ -145,16 +145,21 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Index() {
+export function Index() {
   const [age, setAge] = useState<Age>("toddler");
   const [energy, setEnergy] = useState<Energy>("zoomies");
   const [env, setEnv] = useState<Env>("kaamos");
-  const [routine, setRoutine] = useState<Activity[] | null>(null);
+  const [routine, setRoutine] = useState<{
+    activities: Activity[];
+    age: Age;
+    energy: Energy;
+    env: Env;
+  } | null>(null);
   const [seed, setSeed] = useState(0);
   const [tamer, setTamer] = useState(false);
 
   const generate = () => {
-    setRoutine(generateRoutine(energy, env, seed));
+    setRoutine({ activities: generateRoutine(energy, env, seed), age, energy, env });
     setSeed((s) => s + 1);
     setTimeout(() => document.getElementById("routine")?.scrollIntoView({ behavior: "smooth" }), 50);
   };
@@ -162,7 +167,7 @@ function Index() {
   const copy = async () => {
     if (!routine) return;
     try {
-      await navigator.clipboard.writeText(routineToMarkdown(routine, age, energy, env));
+      await navigator.clipboard.writeText(routineToMarkdown(routine.activities, routine.age, routine.energy, routine.env));
       toast.success("Schedule copied!");
     } catch {
       toast.error("Couldn't copy — check browser permissions.");
@@ -209,7 +214,7 @@ function Index() {
               </button>
             </div>
             <div className="grid gap-5 md:grid-cols-3">
-              {routine.map((a, i) => <ActivityCard key={a.title} a={a} age={age} i={i} />)}
+              {routine.activities.map((a, i) => <ActivityCard key={a.title} a={a} age={routine.age} i={i} />)}
             </div>
           </section>
         )}

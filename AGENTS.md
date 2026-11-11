@@ -28,3 +28,5 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Store each generated routine together with its selected age, energy, and environment; rendering and export use this snapshot so pending selections cannot change the current routine.
