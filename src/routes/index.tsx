@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { X, Play, Pause, RotateCcw, Clock } from "lucide-react";
+import { X, Play, Pause, RotateCcw, Clock, WandSparkles, History, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DemoAccount, CompletedHistory, CompletionDialog } from "@/components/activity-history";
+import { readHistory, saveCompletion, type Completion } from "@/lib/activity-history";
 import {
   AGES, ENERGIES, ENVS, SLOT_LABEL, EMERGENCY_RESETS, generateRoutine, routineToMarkdown, dots,
   type Age, type Energy, type Env, type Activity, type EmergencyReset,
@@ -54,7 +57,7 @@ function Section({ step, title, children }: { step: number; title: string; child
 
 const CARD_TINT = ["bg-primary/10", "bg-accent", "bg-secondary"];
 
-function ActivityCard({ a, age, i }: { a: Activity; age: Age; i: number }) {
+function ActivityCard({ a, age, i, onComplete }: { a: Activity; age: Age; i: number; onComplete: () => void }) {
   const calm = a.slot === "cooldown";
   return (
     <article className="flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
@@ -73,6 +76,7 @@ function ActivityCard({ a, age, i }: { a: Activity; age: Age; i: number }) {
           <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{calm ? "Calm" : "Energy burn"}</dt><dd className="font-semibold">{dots(a.rating, calm ? "🌙" : "🔥", "·")} {a.rating}/5</dd></div>
           <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Prep</dt><dd className="flex items-center gap-1 font-semibold"><Clock className="h-3.5 w-3.5" />{a.prep}</dd></div>
         </dl>
+        <Button className="h-auto rounded-full py-3" onClick={onComplete}><Check />✅ Mark as Completed</Button>
       </div>
     </article>
   );
@@ -80,8 +84,8 @@ function ActivityCard({ a, age, i }: { a: Activity; age: Age; i: number }) {
 
 function TantrumTamer({ onClose }: { onClose: () => void }) {
   const TOTAL = 180;
-  const [reset] = useState<EmergencyReset>(
-    () => EMERGENCY_RESETS[Math.floor(Math.random() * EMERGENCY_RESETS.length)]!,
+  const [reset] = useState<EmergencyReset | undefined>(
+    () => EMERGENCY_RESETS[Math.floor(Math.random() * EMERGENCY_RESETS.length)],
   );
   const [left, setLeft] = useState(TOTAL);
   const [running, setRunning] = useState(true);
@@ -96,7 +100,8 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
   const elapsed = TOTAL - left;
-  const current = [...reset.steps].reverse().find((s) => elapsed >= s.at)!;
+  if (!reset) return null;
+  const current = [...reset.steps].reverse().find((s) => elapsed >= s.at);
   const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, "0");
   return (
     <div role="dialog" aria-modal="true" aria-label="Tantrum Tamer" className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-background">
@@ -120,7 +125,7 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
           <span className="font-display text-5xl font-bold tabular-nums">{left > 0 ? `${mm}:${ss}` : "🎉"}</span>
         </div>
         <p className="min-h-16 rounded-3xl bg-card p-5 text-lg font-semibold shadow-soft">
-          {left > 0 ? current.text : "Done! Offer a hug and a drink of water."}
+          {left > 0 ? current?.text : "Done! Offer a hug and a drink of water."}
         </p>
         <ol className="grid w-full gap-2 text-left text-sm">
           {reset.steps.map((s, i) => (
@@ -129,7 +134,7 @@ function TantrumTamer({ onClose }: { onClose: () => void }) {
             </li>
           ))}
         </ol>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           <button onClick={() => setRunning((r) => !r)} className="flex items-center gap-2 rounded-full bg-destructive px-6 py-3 font-bold text-destructive-foreground">
             {running ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}{running ? "Pause" : "Resume"}
           </button>
@@ -157,6 +162,44 @@ export function Index() {
   } | null>(null);
   const [seed, setSeed] = useState(0);
   const [tamer, setTamer] = useState(false);
+  const [view, setView] = useState<"generator" | "history">("generator");
+  const [demo, setDemo] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [entries, setEntries] = useState<Completion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<Pick<Completion, "activity" | "age" | "energy" | "env"> | null>(null);
+  const owner = demo ? "demo" : "guest";
+
+  useEffect(() => {
+    try { setDemo(localStorage.getItem("mavericks-demo-login") === "true"); } catch { /* Guest access remains available. */ }
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    let active = true;
+    setEntries([]);
+    setLoading(true);
+    setHistoryError(null);
+    readHistory(owner).then((rows) => { if (active) setEntries(rows); })
+      .catch(() => { if (active) setHistoryError("History storage is unavailable in this browser."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [owner, ready]);
+
+  const changeAccount = (loggedIn: boolean) => {
+    try { localStorage.setItem("mavericks-demo-login", String(loggedIn)); } catch { /* Session is still usable for this visit. */ }
+    setDraft(null);
+    setEntries([]);
+    setDemo(loggedIn);
+  };
+
+  const save = async (entry: Completion) => {
+    await saveCompletion(entry);
+    setEntries((previous) => [...previous.filter((e) => e.id !== entry.id), entry]);
+    toast.success("Saved to Completed History!");
+  };
 
   const generate = () => {
     setRoutine({ activities: generateRoutine(energy, env, seed), age, energy, env });
@@ -177,7 +220,7 @@ export function Index() {
   return (
     <div className="min-h-screen font-sans">
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <h1 className="font-display text-xl font-bold sm:text-2xl">Maverick's World 🧸</h1>
             <p className="hidden text-sm text-muted-foreground sm:block">Big Energy, Cozy naps, one adventure at a time.</p>
@@ -185,11 +228,18 @@ export function Index() {
           <button onClick={() => setTamer(true)} className="shrink-0 rounded-full bg-gradient-emergency px-4 py-2.5 text-sm font-extrabold text-destructive-foreground shadow-soft transition-transform hover:scale-105 sm:px-5 sm:text-base">
             🚨 TANTRUM TAMER
           </button>
+          <div className="flex w-full justify-end md:w-auto"><DemoAccount demo={demo} onChange={changeAccount} /></div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-6">
         <p className="mb-6 text-center text-muted-foreground sm:hidden">Big Energy, Cozy naps, one adventure at a time.</p>
+        <nav aria-label="Caregiver dashboard" className="mb-7 flex flex-wrap gap-2 border-b border-border pb-4">
+          <Button variant={view === "generator" ? "default" : "ghost"} className="rounded-full" aria-pressed={view === "generator"} onClick={() => setView("generator")}><WandSparkles />🪄 Generator</Button>
+          <Button variant={view === "history" ? "default" : "ghost"} className="rounded-full" aria-pressed={view === "history"} onClick={() => setView("history")}><History />📜 Completed History</Button>
+          <Button variant="ghost" className="rounded-full text-destructive" onClick={() => setTamer(true)}>🚨 Tantrum Tamer</Button>
+        </nav>
+        {view === "history" ? <CompletedHistory entries={entries} loading={loading} error={historyError} onSave={save} /> : <>
         <section className="space-y-8 rounded-[2rem] border border-border bg-card p-5 shadow-soft sm:p-8">
           <Section step={1} title="Child age group">
             {AGES.map((a) => <Chip key={a.id} active={age === a.id} onClick={() => setAge(a.id)}>{a.label}</Chip>)}
@@ -214,11 +264,13 @@ export function Index() {
               </button>
             </div>
             <div className="grid gap-5 md:grid-cols-3">
-              {routine.activities.map((a, i) => <ActivityCard key={a.title} a={a} age={routine.age} i={i} />)}
+              {routine.activities.map((a, i) => <ActivityCard key={a.title} a={a} age={routine.age} i={i} onComplete={() => setDraft({ activity: a, age: routine.age, energy: routine.energy, env: routine.env })} />)}
             </div>
           </section>
         )}
+        </>}
       </main>
+      {draft && <CompletionDialog draft={draft} owner={owner} onClose={() => setDraft(null)} onSave={save} />}
       {tamer && <TantrumTamer onClose={() => setTamer(false)} />}
     </div>
   );

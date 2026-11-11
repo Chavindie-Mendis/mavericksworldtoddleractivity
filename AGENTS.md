@@ -30,3 +30,5 @@ use the editor.
 <!-- LOVABLE:END -->
 
 - Store each generated routine together with its selected age, energy, and environment; rendering and export use this snapshot so pending selections cannot change the current routine.
+- Demo sessions use a browser-local flag, not authentication; guest and demo completion histories are separate IndexedDB scopes, with video Blobs stored beside entries for durable local playback.
+- Validate video MIME type and byte size before previewing and again before persistence; only non-cooldown activity ratings contribute to energy-burn points, not calories.
