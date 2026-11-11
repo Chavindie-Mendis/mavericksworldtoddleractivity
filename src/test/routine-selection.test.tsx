@@ -16,7 +16,7 @@ describe("Generated routine selection snapshot", () => {
     const initial = generateRoutine("zoomies", "kaamos", 0);
     expect(container.querySelector("article p.leading-relaxed")?.textContent).toBe(initial[0]?.steps.toddler);
 
-    fireEvent.click(screen.getByRole("button", { name: AGES[1]?.label }));
+    fireEvent.click(screen.getByRole("button", { name: AGES[1]?.label ?? "Preschool" }));
     expect(container.querySelector("article p.leading-relaxed")?.textContent).toBe(initial[0]?.steps.toddler);
 
     fireEvent.click(generate);
@@ -30,9 +30,9 @@ describe("Generated routine selection snapshot", () => {
     render(<Index />);
     const generate = screen.getByRole("button", { name: /Generate Adventure Routine/ });
     fireEvent.click(generate);
-    fireEvent.click(screen.getByRole("button", { name: AGES[1]?.label }));
-    fireEvent.click(screen.getByRole("button", { name: ENERGIES[1]?.label }));
-    fireEvent.click(screen.getByRole("button", { name: ENVS[1]?.label }));
+    fireEvent.click(screen.getByRole("button", { name: AGES[1]?.label ?? "Preschool" }));
+    fireEvent.click(screen.getByRole("button", { name: ENERGIES[1]?.label ?? "Overstimulated" }));
+    fireEvent.click(screen.getByRole("button", { name: ENVS[1]?.label ?? "Kurakeli" }));
     fireEvent.click(screen.getByRole("button", { name: /Copy Schedule/ }));
     expect(writeText).toHaveBeenLastCalledWith(routineToMarkdown(generateRoutine("zoomies", "kaamos", 0), "toddler", "zoomies", "kaamos"));
 
