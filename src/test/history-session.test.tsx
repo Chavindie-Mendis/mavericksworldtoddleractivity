@@ -31,15 +31,14 @@ describe("History session transitions", () => {
   });
 
   it("does not show a pending guest save in demo history after switching accounts", async () => {
-    storage.read.mockResolvedValue([]);
+    storage.read.mockImplementation((owner: Completion["owner"]) => Promise.resolve(owner === "guest" ? [{ ...entry("guest"), notes: "Pending guest note" }] : []));
     let finish: (() => void) | undefined;
     storage.save.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve; }));
     render(<Index />);
     await waitFor(() => expect(storage.read).toHaveBeenCalledWith("guest"));
-    fireEvent.click(screen.getByRole("button", { name: /Generate Adventure Routine/ }));
-    fireEvent.click(screen.getAllByRole("button", { name: /Mark as Completed/ })[0]);
-    fireEvent.change(screen.getByLabelText("Caregiver notes (optional)"), { target: { value: "Pending guest note" } });
-    fireEvent.submit(screen.getByRole("button", { name: "Save to Completed History" }).closest("form") as HTMLFormElement);
+    fireEvent.click(screen.getByRole("button", { name: /📜 Completed History/ }));
+    await screen.findByText("Pending guest note");
+    fireEvent.change(screen.getByLabelText("Upload Video Clip"), { target: { files: [new File(["clip"], "clip.webm", { type: "video/webm" })] } });
     fireEvent.click(screen.getByRole("button", { name: "Login / Sign Up" }));
     fireEvent.click(screen.getByRole("button", { name: "Log in as Demo Caregiver" }));
     await waitFor(() => expect(storage.read).toHaveBeenCalledWith("demo"));
