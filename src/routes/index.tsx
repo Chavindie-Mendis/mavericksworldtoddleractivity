@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { X, Play, Pause, RotateCcw, Clock, WandSparkles, History, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -170,9 +170,14 @@ export function Index() {
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [draft, setDraft] = useState<Pick<Completion, "activity" | "age" | "energy" | "env"> | null>(null);
   const owner = demo ? "demo" : "guest";
+  const session = useRef({ owner: "guest" as Completion["owner"], revision: 0 });
 
   useEffect(() => {
-    try { setDemo(localStorage.getItem("mavericks-demo-login") === "true"); } catch { /* Guest access remains available. */ }
+    try {
+      const loggedIn = localStorage.getItem("mavericks-demo-login") === "true";
+      session.current.owner = loggedIn ? "demo" : "guest";
+      setDemo(loggedIn);
+    } catch { /* Guest access remains available. */ }
     setReady(true);
   }, []);
 
@@ -182,7 +187,9 @@ export function Index() {
     setEntries([]);
     setLoading(true);
     setHistoryError(null);
-    readHistory(owner).then((rows) => { if (active) setEntries(rows); })
+    readHistory(owner).then((rows) => {
+      if (active) setEntries((previous) => [...rows.filter((row) => !previous.some((entry) => entry.id === row.id)), ...previous]);
+    })
       .catch(() => { if (active) setHistoryError("History storage is unavailable in this browser."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -190,13 +197,18 @@ export function Index() {
 
   const changeAccount = (loggedIn: boolean) => {
     try { localStorage.setItem("mavericks-demo-login", String(loggedIn)); } catch { /* Session is still usable for this visit. */ }
+    const nextOwner = loggedIn ? "demo" : "guest";
+    if (session.current.owner === nextOwner) return;
+    session.current = { owner: nextOwner, revision: session.current.revision + 1 };
     setDraft(null);
     setEntries([]);
     setDemo(loggedIn);
   };
 
   const save = async (entry: Completion) => {
+    const revision = session.current.revision;
     await saveCompletion(entry);
+    if (session.current.owner !== entry.owner || session.current.revision !== revision) return;
     setEntries((previous) => [...previous.filter((e) => e.id !== entry.id), entry]);
     toast.success("Saved to Completed History!");
   };
@@ -239,7 +251,7 @@ export function Index() {
           <Button variant={view === "history" ? "default" : "ghost"} className="rounded-full" aria-pressed={view === "history"} onClick={() => setView("history")}><History />📜 Completed History</Button>
           <Button variant="ghost" className="rounded-full text-destructive" onClick={() => setTamer(true)}>🚨 Tantrum Tamer</Button>
         </nav>
-        {view === "history" ? <CompletedHistory entries={entries} loading={loading} error={historyError} onSave={save} /> : <>
+        {view === "history" ? <CompletedHistory key={owner} entries={entries.filter((entry) => entry.owner === owner)} loading={loading} error={historyError} onSave={save} /> : <>
         <section className="space-y-8 rounded-[2rem] border border-border bg-card p-5 shadow-soft sm:p-8">
           <Section step={1} title="Child age group">
             {AGES.map((a) => <Chip key={a.id} active={age === a.id} onClick={() => setAge(a.id)}>{a.label}</Chip>)}
