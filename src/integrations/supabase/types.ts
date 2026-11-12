@@ -14,7 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_completions: {
+        Row: {
+          activity: Json
+          age: string
+          child_id: string | null
+          completed_at: string
+          energy: string
+          env: string
+          id: string
+          notes: string
+          stars: number
+          user_id: string
+          video_path: string | null
+        }
+        Insert: {
+          activity: Json
+          age: string
+          child_id?: string | null
+          completed_at: string
+          energy: string
+          env: string
+          id: string
+          notes?: string
+          stars: number
+          user_id: string
+          video_path?: string | null
+        }
+        Update: {
+          activity?: Json
+          age?: string
+          child_id?: string | null
+          completed_at?: string
+          energy?: string
+          env?: string
+          id?: string
+          notes?: string
+          stars?: number
+          user_id?: string
+          video_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_completions_child_id_user_id_fkey"
+            columns: ["child_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "children"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      children: {
+        Row: {
+          age_group: string
+          created_at: string
+          id: string
+          nickname: string
+          preferences: string
+          user_id: string
+        }
+        Insert: {
+          age_group: string
+          created_at?: string
+          id?: string
+          nickname: string
+          preferences?: string
+          user_id: string
+        }
+        Update: {
+          age_group?: string
+          created_at?: string
+          id?: string
+          nickname?: string
+          preferences?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

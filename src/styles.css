@@ -172,3 +172,7 @@
 @utility animate-glow { animation: glow-pulse 2.4s ease-in-out infinite; }
 @keyframes wobble { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
 @utility animate-wobble { animation: wobble 1.6s ease-in-out infinite; }
+
+:root { --google-background: #ffffff; --google-border: #747775; --google-text: #1f1f1f; }
+.dark { --google-background: #131314; --google-border: #8e918f; --google-text: #e3e3e3; }
+.google-auth-button { background: var(--google-background); border: 1px solid var(--google-border); color: var(--google-text); gap: 10px; padding-inline: 12px; font-weight: 500; }

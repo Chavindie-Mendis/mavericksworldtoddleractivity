@@ -1,4 +1,7 @@
 # Requested enhancements
+- [ ] Replace demo access with email/password and social accounts, confirmation and password recovery.
+- [ ] Add private caregiver usernames and child nicknames, age groups, and preferences.
+- [ ] Link saved activity history to real accounts and children; verify privacy and account flows.
 - [x] Audit demo login, history, ratings, notes, and video playback; fix reproduced issues and verify persistence.
 - [x] Add demo login and guest access without profiles.
 - [x] Add completion dialog, searchable history, and energy-rating statistics.

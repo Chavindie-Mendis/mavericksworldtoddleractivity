@@ -11,7 +11,9 @@ export function validateVideo(file: Pick<File, "size" | "type">): string | null 
 
 export interface Completion {
   id: string;
-  owner: "guest" | "demo";
+  owner: string;
+  childId?: string;
+  videoPath?: string;
   activity: Activity;
   age: Age;
   energy: Energy;
