@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794461863912,
+      "tag": "0000_caregiver_and_child_accounts",
+      "breakpoints": true
+    }
+  ]
 }
