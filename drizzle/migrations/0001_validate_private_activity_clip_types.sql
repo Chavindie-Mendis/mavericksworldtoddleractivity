@@ -1,0 +1,1 @@
+CREATE POLICY activity_video_type_guard ON storage.objects AS RESTRICTIVE FOR INSERT TO authenticated WITH CHECK (bucket_id <> 'activity-clips' OR (metadata->>'mimetype') LIKE 'video/%');

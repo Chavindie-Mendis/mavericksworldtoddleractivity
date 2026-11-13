@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
-import { Check, Film, Search, Star, Upload, UserRound, LogOut, History, Flame } from "lucide-react";
+import { Check, Film, Search, Star, Upload, History, Flame } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,16 +10,19 @@ import { energyPoints, filterHistory, validateVideo, type Completion } from "@/l
 import { AGES, ENERGIES, ENVS } from "@/lib/routines";
 import { cn } from "@/lib/utils";
 
-export function DemoAccount({ demo, onChange }: { demo: boolean; onChange: (demo: boolean) => void }) {
-  const [open, setOpen] = useState(false);
-  return <>
-    {demo ? <div className="flex items-center gap-2"><UserRound className="h-5 w-5 text-primary" /><span className="text-sm font-bold">Welcome, Demo Caregiver 🧸</span><Button variant="ghost" size="icon" title="Log Out" aria-label="Log Out" onClick={() => onChange(false)}><LogOut /></Button></div>
-      : <Button variant="outline" className="rounded-full" onClick={() => setOpen(true)}><UserRound />Login / Sign Up</Button>}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-sm rounded-2xl"><DialogHeader><DialogTitle className="font-display text-2xl">Welcome, caregiver 🧸</DialogTitle><DialogDescription>Demo access · No password needed</DialogDescription></DialogHeader>
-      <Button className="h-12 rounded-full" onClick={() => { onChange(true); setOpen(false); }}>Log in as Demo Caregiver</Button>
-      <Button variant="outline" className="h-12 rounded-full" onClick={() => { onChange(false); setOpen(false); }}>Continue as Guest</Button>
-    </DialogContent></Dialog>
-  </>;
+function SavedVideo({ path }: { path: string }) {
+  const [video, setVideo] = useState<Blob>();
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setVideo(undefined); setError(false);
+    void supabase.storage.from("activity-clips").download(path).then(({ data, error }) => {
+      if (!active) return;
+      if (error || !data) setError(true); else setVideo(data);
+    });
+    return () => { active = false; };
+  }, [path]);
+  return video ? <VideoPlayer video={video} /> : <p role="status">{error ? "Couldn't load this clip. Try refreshing." : "Loading clip…"}</p>;
 }
 
 export function VideoPlayer({ video }: { video: Blob }) {
@@ -52,7 +56,7 @@ export function VideoUpload({ onSelect, disabled = false }: { onSelect: (file: F
   </div>;
 }
 
-type CompletionDraft = Pick<Completion, "activity" | "age" | "energy" | "env">;
+type CompletionDraft = Pick<Completion, "activity" | "age" | "energy" | "env" | "childId">;
 
 function localDateTime() {
   const date = new Date();
@@ -73,7 +77,7 @@ export function CompletionDialog({ draft, owner, onClose, onSave }: { draft: Com
       try {
         await onSave({ ...draft, id: crypto.randomUUID(), owner, completedAt: new Date(completedAt).toISOString(), stars, notes: notes.trim(), ...(video ? { video } : {}) });
         onClose();
-      } catch { toast.error("Couldn't save. Check available browser storage and try again."); }
+      } catch { toast.error("Couldn't save this activity. Please check your connection and try again."); }
       finally { setBusy(false); }
     }}>
       <label className="block space-y-2 text-sm font-bold">Completed date and time<Input type="datetime-local" required value={completedAt} onChange={(e) => setCompletedAt(e.target.value)} /></label>
@@ -106,7 +110,8 @@ export function CompletedHistory({ entries, loading, error, onSave }: { entries:
       <p className="text-xs text-muted-foreground">{AGES.find((a) => a.id === entry.age)?.label} · {ENERGIES.find((e) => e.id === entry.energy)?.label} · {ENVS.find((e) => e.id === entry.env)?.label}</p>
       {entry.notes && <p className="whitespace-pre-wrap break-words">{entry.notes}</p>}
       {entry.video && <VideoPlayer video={entry.video} />}
-      <VideoUpload disabled={uploading === entry.id} onSelect={async (video) => { setUploading(entry.id); try { await onSave({ ...entry, video }); toast.success("Video clip saved!"); } catch { toast.error("Couldn't save this clip. Check available browser storage."); } finally { setUploading(null); } }} />
+      {!entry.video && entry.videoPath && <SavedVideo path={entry.videoPath} />}
+      <VideoUpload disabled={uploading === entry.id} onSelect={async (video) => { setUploading(entry.id); try { await onSave({ ...entry, video }); toast.success("Video clip saved!"); } catch { toast.error("Couldn't save this clip. Please check your connection and try again."); } finally { setUploading(null); } }} />
     </article>)}</div>}
   </section>;
 }

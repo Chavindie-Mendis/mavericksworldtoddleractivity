@@ -1,15 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, useNavigate, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { X, Play, Pause, RotateCcw, Clock, WandSparkles, History, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DemoAccount, CompletedHistory, CompletionDialog } from "@/components/activity-history";
+import { CompletedHistory, CompletionDialog } from "@/components/activity-history";
 import { readHistory, saveCompletion, type Completion } from "@/lib/activity-history";
 import {
   AGES, ENERGIES, ENVS, SLOT_LABEL, EMERGENCY_RESETS, generateRoutine, routineToMarkdown, dots,
   type Age, type Energy, type Env, type Activity, type EmergencyReset,
 } from "@/lib/routines";
 import { cn } from "@/lib/utils";
+import { useAccount } from "@/components/account-provider";
+import { FamilyProfiles, type ChildProfile } from "@/components/family-profiles";
+import { readCloudHistory, saveCloudCompletion } from "@/lib/cloud-history";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -159,62 +164,71 @@ export function Index() {
     age: Age;
     energy: Energy;
     env: Env;
+    childId?: string | undefined;
   } | null>(null);
   const [seed, setSeed] = useState(0);
   const [tamer, setTamer] = useState(false);
-  const [view, setView] = useState<"generator" | "history">("generator");
-  const [demo, setDemo] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [view, setView] = useState<"generator" | "history" | "family">("generator");
+  const { user, ready } = useAccount();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [childId, setChildId] = useState("");
   const [entries, setEntries] = useState<Completion[]>([]);
   const [loading, setLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Pick<Completion, "activity" | "age" | "energy" | "env"> | null>(null);
-  const owner = demo ? "demo" : "guest";
-  const session = useRef({ owner: "guest" as Completion["owner"], revision: 0 });
-
+  const [draft, setDraft] = useState<Pick<Completion, "activity" | "age" | "energy" | "env" | "childId"> | null>(null);
+  const owner = user?.id ?? "guest";
+  const session = useRef({ owner, revision: 0 });
+  const refreshChildren = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.from("children").select("*").eq("user_id", user.id).order("created_at");
+    if (error) throw error;
+    if (session.current.owner === user.id) setChildren(data ?? []);
+  };
   useEffect(() => {
-    try {
-      const loggedIn = localStorage.getItem("mavericks-demo-login") === "true";
-      session.current.owner = loggedIn ? "demo" : "guest";
-      setDemo(loggedIn);
-    } catch { /* Guest access remains available. */ }
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
+    session.current = { owner, revision: session.current.revision + 1 };
+    setDraft(null); setChildren([]); setChildId(""); setRoutine(null);
     if (!ready) return;
     let active = true;
-    setEntries([]);
-    setLoading(true);
-    setHistoryError(null);
-    readHistory(owner).then((rows) => {
-      if (active) setEntries((previous) => [...rows.filter((row) => !previous.some((entry) => entry.id === row.id)), ...previous]);
-    })
-      .catch(() => { if (active) setHistoryError("History storage is unavailable in this browser."); })
+    setEntries([]); setLoading(true); setHistoryError(null);
+    const load = user ? readCloudHistory(user.id) : readHistory("guest");
+    load.then((rows) => { if (active) setEntries((previous) => [...rows.filter((row) => !previous.some((e) => e.id === row.id)), ...previous]); })
+      .catch(() => { if (active) setHistoryError("Couldn't load your history. Please try refreshing."); })
       .finally(() => { if (active) setLoading(false); });
+    if (user) {
+      void supabase.from("children").select("*").eq("user_id", user.id).order("created_at").then(({ data, error }) => {
+        if (active) { setChildren(data ?? []); if (error) toast.error("Couldn't load child profiles."); }
+      });
+      const requested = user.user_metadata?.['requested_username'];
+      if (typeof requested === "string") {
+        void supabase.from("profiles").select("username").eq("id", user.id).maybeSingle().then(async ({ data }) => {
+          if (active && !data?.username) {
+            const { error } = await supabase.from("profiles").upsert({ id: user.id, username: requested });
+            if (error) toast.error("Please choose an available username in Your family.");
+          }
+        });
+      }
+    }
     return () => { active = false; };
   }, [owner, ready]);
-
-  const changeAccount = (loggedIn: boolean) => {
-    try { localStorage.setItem("mavericks-demo-login", String(loggedIn)); } catch { /* Session is still usable for this visit. */ }
-    const nextOwner = loggedIn ? "demo" : "guest";
-    if (session.current.owner === nextOwner) return;
-    session.current = { owner: nextOwner, revision: session.current.revision + 1 };
-    setDraft(null);
-    setEntries([]);
-    setDemo(loggedIn);
-  };
-
   const save = async (entry: Completion) => {
     const revision = session.current.revision;
-    await saveCompletion(entry);
+    const saved = user ? await saveCloudCompletion(entry) : (await saveCompletion(entry), entry);
     if (session.current.owner !== entry.owner || session.current.revision !== revision) return;
-    setEntries((previous) => [...previous.filter((e) => e.id !== entry.id), entry]);
+    setEntries((previous) => [...previous.filter((e) => e.id !== saved.id), saved]);
     toast.success("Saved to Completed History!");
+  };
+  const signOut = async () => {
+    await queryClient.cancelQueries(); queryClient.clear();
+    const { error } = await supabase.auth.signOut();
+    if (error) { toast.error("Couldn't sign out. Try again."); return; }
+    setEntries([]); setChildren([]); setDraft(null); setRoutine(null);
+    await navigate({ to: "/auth", replace: true });
   };
 
   const generate = () => {
-    setRoutine({ activities: generateRoutine(energy, env, seed), age, energy, env });
+    setRoutine({ activities: generateRoutine(energy, env, seed), age, energy, env, childId: childId || undefined });
     setSeed((s) => s + 1);
     setTimeout(() => document.getElementById("routine")?.scrollIntoView({ behavior: "smooth" }), 50);
   };
@@ -240,7 +254,7 @@ export function Index() {
           <button onClick={() => setTamer(true)} className="shrink-0 rounded-full bg-gradient-emergency px-4 py-2.5 text-sm font-extrabold text-destructive-foreground shadow-soft transition-transform hover:scale-105 sm:px-5 sm:text-base">
             🚨 TANTRUM TAMER
           </button>
-          <div className="flex w-full justify-end md:w-auto"><DemoAccount demo={demo} onChange={changeAccount} /></div>
+          <div className="flex w-full justify-end md:w-auto">{user ? <div className="flex items-center gap-2"><Button variant="outline" onClick={() => setView("family")}>Your family</Button><Button variant="ghost" onClick={signOut}>Sign out</Button></div> : <Button asChild variant="outline"><Link to="/auth">Login / Sign Up</Link></Button>}</div>
         </div>
       </header>
 
@@ -251,7 +265,8 @@ export function Index() {
           <Button variant={view === "history" ? "default" : "ghost"} className="rounded-full" aria-pressed={view === "history"} onClick={() => setView("history")}><History />📜 Completed History</Button>
           <Button variant="ghost" className="rounded-full text-destructive" onClick={() => setTamer(true)}>🚨 Tantrum Tamer</Button>
         </nav>
-        {view === "history" ? <CompletedHistory key={owner} entries={entries.filter((entry) => entry.owner === owner)} loading={loading} error={historyError} onSave={save} /> : <>
+        {user && <div className="mb-6 flex flex-wrap items-center gap-3"><label className="font-semibold" htmlFor="child-selection">Child</label><select id="child-selection" className="max-w-full rounded-md border border-input bg-background px-3 py-2" value={childId} onChange={(e) => { setChildId(e.target.value); const child = children.find((c) => c.id === e.target.value); if (child) setAge(child.age_group as Age); }}><option value="">No child selected</option>{children.map((child) => <option key={child.id} value={child.id}>{child.nickname}</option>)}</select></div>}
+        {view === "family" && user ? <FamilyProfiles key={owner} userId={user.id} children={children} onChange={refreshChildren} /> : view === "history" ? <CompletedHistory key={owner} entries={entries.filter((entry) => entry.owner === owner && (!childId || entry.childId === childId))} loading={loading} error={historyError} onSave={save} /> : <>
         <section className="space-y-8 rounded-[2rem] border border-border bg-card p-5 shadow-soft sm:p-8">
           <Section step={1} title="Child age group">
             {AGES.map((a) => <Chip key={a.id} active={age === a.id} onClick={() => setAge(a.id)}>{a.label}</Chip>)}
@@ -276,7 +291,7 @@ export function Index() {
               </button>
             </div>
             <div className="grid gap-5 md:grid-cols-3">
-              {routine.activities.map((a, i) => <ActivityCard key={a.title} a={a} age={routine.age} i={i} onComplete={() => setDraft({ activity: a, age: routine.age, energy: routine.energy, env: routine.env })} />)}
+              {routine.activities.map((a, i) => <ActivityCard key={a.title} a={a} age={routine.age} i={i} onComplete={() => setDraft({ activity: a, age: routine.age, energy: routine.energy, env: routine.env, childId: routine.childId })} />)}
             </div>
           </section>
         )}
