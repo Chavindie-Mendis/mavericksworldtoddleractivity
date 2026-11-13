@@ -4,12 +4,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
-const AccountContext = createContext<{ user: User | null; ready: boolean }>({ user: null, ready: true });
+const AccountContext = createContext<{ user: User | null; ready: boolean; recovery: boolean }>({ user: null, ready: true, recovery: false });
 export const useAccount = () => useContext(AccountContext);
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
+  const [recovery, setRecovery] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
   useEffect(() => {
@@ -20,6 +21,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       revision++;
       if (!active) return;
       setUser(session?.user ?? null);
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      if (event === "SIGNED_OUT") setRecovery(false);
       setReady(true);
       void router.invalidate();
       if (event === "SIGNED_OUT") { void queryClient.cancelQueries(); queryClient.clear(); }
@@ -31,5 +34,5 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }).catch(() => { if (active) setReady(true); });
     return () => { active = false; data.subscription.unsubscribe(); };
   }, [queryClient, router]);
-  return <AccountContext.Provider value={{ user, ready }}>{children}</AccountContext.Provider>;
+  return <AccountContext.Provider value={{ user, ready, recovery }}>{children}</AccountContext.Provider>;
 }
