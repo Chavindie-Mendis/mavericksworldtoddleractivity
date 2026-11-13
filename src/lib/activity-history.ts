@@ -12,8 +12,8 @@ export function validateVideo(file: Pick<File, "size" | "type">): string | null 
 export interface Completion {
   id: string;
   owner: string;
-  childId?: string;
-  videoPath?: string;
+  childId?: string | undefined;
+  videoPath?: string | undefined;
   activity: Activity;
   age: Age;
   energy: Energy;
@@ -21,7 +21,7 @@ export interface Completion {
   completedAt: string;
   stars: number;
   notes: string;
-  video?: Blob;
+  video?: Blob | undefined;
 }
 
 export function energyPoints(entries: Completion[]): number {

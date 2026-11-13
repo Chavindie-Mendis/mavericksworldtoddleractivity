@@ -164,7 +164,7 @@ export function Index() {
     age: Age;
     energy: Energy;
     env: Env;
-    childId?: string;
+    childId?: string | undefined;
   } | null>(null);
   const [seed, setSeed] = useState(0);
   const [tamer, setTamer] = useState(false);
@@ -200,7 +200,7 @@ export function Index() {
       void supabase.from("children").select("*").eq("user_id", user.id).order("created_at").then(({ data, error }) => {
         if (active) { setChildren(data ?? []); if (error) toast.error("Couldn't load child profiles."); }
       });
-      const requested = user.user_metadata?.requested_username;
+      const requested = user.user_metadata?.['requested_username'];
       if (typeof requested === "string") {
         void supabase.from("profiles").select("username").eq("id", user.id).maybeSingle().then(async ({ data }) => {
           if (active && !data?.username) {

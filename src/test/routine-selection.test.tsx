@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Index } from "@/routes/index";
 import { AGES, ENERGIES, ENVS, generateRoutine, routineToMarkdown } from "@/lib/routines";
 
+vi.mock("@tanstack/react-query", async (original) => ({ ...await original<typeof import("@tanstack/react-query")>(), useQueryClient: () => ({ cancelQueries: vi.fn(), clear: vi.fn() }) }));
+vi.mock("@tanstack/react-router", async (original) => ({ ...await original<typeof import("@tanstack/react-router")>(), useNavigate: () => vi.fn(), Link: ({ children }: { children: React.ReactNode }) => <span>{children}</span> }));
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
