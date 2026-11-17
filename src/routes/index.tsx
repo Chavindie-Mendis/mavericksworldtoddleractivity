@@ -17,11 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/")({
+  staticData: { sitemap: true },
   head: () => ({
     meta: [
       { title: "Maverick's World — Adventure Routines for Little Ones" },
       { name: "description", content: "Big energy, cozy naps, one adventure at a time. Instant play routines for toddlers and preschoolers, tuned for Finnish weather." },
-      { property: "og:title", content: "Maverick's World 🧸" },
+      { property: "og:title", content: "Maverick's World — Activity Routines for Toddlers and Preschoolers" },
       { property: "og:description", content: "Instant sensory & movement routines for toddlers and preschoolers, plus an emergency Tantrum Tamer." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -248,7 +249,7 @@ export function Index() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
-            <h1 className="font-display text-xl font-bold sm:text-2xl">Maverick's World 🧸</h1>
+            <h1 className="font-display text-xl font-bold sm:text-2xl"><span className="block">Maverick's World 🧸</span><span className="block font-sans text-sm font-semibold">Activity routines for toddlers and preschoolers</span></h1>
             <p className="hidden text-sm text-muted-foreground sm:block">Big Energy, Cozy naps, one adventure at a time.</p>
           </div>
           <button onClick={() => setTamer(true)} className="shrink-0 rounded-full bg-gradient-emergency px-4 py-2.5 text-sm font-extrabold text-destructive-foreground shadow-soft transition-transform hover:scale-105 sm:px-5 sm:text-base">

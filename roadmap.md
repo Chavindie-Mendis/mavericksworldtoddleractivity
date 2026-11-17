@@ -1,4 +1,6 @@
 # Requested enhancements
+- [x] Fix SEO foundations: homepage heading and social title, sitemap and crawler reference; verify results.
+- [ ] Decide whether to add the suggested indoor toddler activities guide. Blocked: needs approval for new content.
 - [x] Replace demo access with email/password and social accounts, confirmation and password recovery.
 - [x] Add private caregiver usernames and child nicknames, age groups, and preferences.
 - [x] Link saved activity history to real accounts and children; verify configured owner-only access.

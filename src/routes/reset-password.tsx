@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { passwordSchema } from "@/lib/account-validation";
 import { useAccount } from "@/components/account-provider";
 
-export const Route = createFileRoute("/reset-password")({ head: () => ({ meta: [{ title: "Reset password — Maverick's World" }, { name: "description", content: "Set a new password for your caregiver account." }, { property: "og:title", content: "Reset your Maverick's World password" }, { property: "og:description", content: "Securely restore access to your caregiver account." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: ResetPassword });
+export const Route = createFileRoute("/reset-password")({ staticData: { sitemap: false }, head: () => ({ meta: [{ name: "robots", content: "noindex" }, { title: "Reset password — Maverick's World" }, { name: "description", content: "Set a new password for your caregiver account." }, { property: "og:title", content: "Reset your Maverick's World password" }, { property: "og:description", content: "Securely restore access to your caregiver account." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }), component: ResetPassword });
 function ResetPassword() {
   const [recovery, setRecovery] = useState(false);
   const account = useAccount();
