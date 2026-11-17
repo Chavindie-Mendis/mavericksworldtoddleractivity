@@ -1,7 +1,8 @@
 import { Link, useNavigate, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { X, Play, Pause, RotateCcw, Clock, WandSparkles, History, Check } from "lucide-react";
+import { X, Play, Pause, RotateCcw, Clock, WandSparkles, Copy, Check } from "lucide-react";
+import { DashboardShell } from "@/components/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { CompletedHistory, CompletionDialog } from "@/components/activity-history";
 import { readHistory, saveCompletion, type Completion } from "@/lib/activity-history";
@@ -33,40 +34,41 @@ export const Route = createFileRoute("/")({
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
+    <Button
+      variant="outline"
       type="button"
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "rounded-full border-2 px-4 py-2.5 text-sm font-semibold transition-all text-left",
+        "h-auto min-h-12 w-full justify-start whitespace-normal rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors",
         active
-          ? "border-primary bg-primary text-primary-foreground shadow-soft scale-[1.02]"
-          : "border-border bg-card text-foreground hover:border-primary/50",
+          ? "border-primary bg-accent text-accent-foreground shadow-none"
+          : "border-border bg-card text-foreground shadow-none hover:border-primary/50",
       )}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
 function Section({ step, title, children }: { step: number; title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="space-y-3">
-      <legend className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
+    <fieldset className="min-w-0 space-y-3">
+      <legend className="mb-3 flex items-center gap-2 font-display text-base font-semibold">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-sm text-secondary-foreground">{step}</span>
         {title}
       </legend>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="grid gap-2">{children}</div>
     </fieldset>
   );
 }
 
-const CARD_TINT = ["bg-primary/10", "bg-accent", "bg-secondary"];
+const CARD_TINT = ["bg-accent", "bg-secondary", "bg-lavender"];
 
 function ActivityCard({ a, age, i, onComplete }: { a: Activity; age: Age; i: number; onComplete: () => void }) {
   const calm = a.slot === "cooldown";
   return (
-    <article className="flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-soft">
+    <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-soft">
       <div className={cn("flex items-center gap-3 p-5", CARD_TINT[i])}>
         <span className="text-4xl" aria-hidden>{a.icon}</span>
         <div>
@@ -77,12 +79,12 @@ function ActivityCard({ a, age, i, onComplete }: { a: Activity; age: Age; i: num
       <div className="flex flex-1 flex-col gap-4 p-5">
         <p className="leading-relaxed">{a.steps[age]}</p>
         <span className="self-start rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">{a.benefit}</span>
-        <dl className="mt-auto grid gap-2 rounded-2xl bg-muted p-4 text-sm">
+        <dl className="mt-auto grid gap-2 border-t border-border pt-4 text-sm">
           <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Parent effort</dt><dd className="font-semibold">{dots(a.effort, "⭐", "☆")} {a.effort}/5</dd></div>
           <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{calm ? "Calm" : "Energy burn"}</dt><dd className="font-semibold">{dots(a.rating, calm ? "🌙" : "🔥", "·")} {a.rating}/5</dd></div>
           <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Prep</dt><dd className="flex items-center gap-1 font-semibold"><Clock className="h-3.5 w-3.5" />{a.prep}</dd></div>
         </dl>
-        <Button className="h-auto rounded-full py-3" onClick={onComplete}><Check />✅ Mark as Completed</Button>
+        <Button className="h-auto rounded-full py-3" onClick={onComplete}><Check />Mark as Completed</Button>
       </div>
     </article>
   );
@@ -245,30 +247,10 @@ export function Index() {
   };
 
   return (
-    <div className="min-h-screen font-sans">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="min-w-0">
-            <h1 className="font-display text-xl font-bold sm:text-2xl"><span className="block">Maverick's World 🧸</span><span className="block font-sans text-sm font-semibold">Activity routines for toddlers and preschoolers</span></h1>
-            <p className="hidden text-sm text-muted-foreground sm:block">Big Energy, Cozy naps, one adventure at a time.</p>
-          </div>
-          <button onClick={() => setTamer(true)} className="shrink-0 rounded-full bg-gradient-emergency px-4 py-2.5 text-sm font-extrabold text-destructive-foreground shadow-soft transition-transform hover:scale-105 sm:px-5 sm:text-base">
-            🚨 TANTRUM TAMER
-          </button>
-          <div className="flex w-full justify-end md:w-auto">{user ? <div className="flex items-center gap-2"><Button variant="outline" onClick={() => setView("family")}>Your family</Button><Button variant="ghost" onClick={signOut}>Sign out</Button></div> : <Button asChild variant="outline"><Link to="/auth">Login / Sign Up</Link></Button>}</div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl px-4 pb-20 pt-6">
-        <p className="mb-6 text-center text-muted-foreground sm:hidden">Big Energy, Cozy naps, one adventure at a time.</p>
-        <nav aria-label="Caregiver dashboard" className="mb-7 flex flex-wrap gap-2 border-b border-border pb-4">
-          <Button variant={view === "generator" ? "default" : "ghost"} className="rounded-full" aria-pressed={view === "generator"} onClick={() => setView("generator")}><WandSparkles />🪄 Generator</Button>
-          <Button variant={view === "history" ? "default" : "ghost"} className="rounded-full" aria-pressed={view === "history"} onClick={() => setView("history")}><History />📜 Completed History</Button>
-          <Button variant="ghost" className="rounded-full text-destructive" onClick={() => setTamer(true)}>🚨 Tantrum Tamer</Button>
-        </nav>
+    <DashboardShell view={view} onView={setView} signedIn={Boolean(user)} onSignOut={() => { void signOut(); }} onTamer={() => setTamer(true)}>
         {user && <div className="mb-6 flex flex-wrap items-center gap-3"><label className="font-semibold" htmlFor="child-selection">Child</label><select id="child-selection" className="max-w-full rounded-md border border-input bg-background px-3 py-2" value={childId} onChange={(e) => { setChildId(e.target.value); const child = children.find((c) => c.id === e.target.value); if (child) setAge(child.age_group as Age); }}><option value="">No child selected</option>{children.map((child) => <option key={child.id} value={child.id}>{child.nickname}</option>)}</select></div>}
         {view === "family" && user ? <FamilyProfiles key={owner} userId={user.id} children={children} onChange={refreshChildren} /> : view === "history" ? <CompletedHistory key={owner} entries={entries.filter((entry) => entry.owner === owner && (!childId || entry.childId === childId))} loading={loading} error={historyError} onSave={save} /> : <>
-        <section className="space-y-8 rounded-[2rem] border border-border bg-card p-5 shadow-soft sm:p-8">
+        <section className="space-y-7"><h2 className="font-display text-xl font-semibold">Create an adventure</h2><div className="grid gap-7 md:grid-cols-3">
           <Section step={1} title="Child age group">
             {AGES.map((a) => <Chip key={a.id} active={age === a.id} onClick={() => setAge(a.id)}>{a.label}</Chip>)}
           </Section>
@@ -278,18 +260,14 @@ export function Index() {
           <Section step={3} title="Weather & space">
             {ENVS.map((e) => <Chip key={e.id} active={env === e.id} onClick={() => setEnv(e.id)}>{e.label}</Chip>)}
           </Section>
-          <button onClick={generate} className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-primary px-6 py-5 font-display text-xl font-bold text-primary-foreground animate-glow transition-transform hover:scale-[1.01] active:scale-[0.99]">
-            🪄 Generate Adventure Routine
-          </button>
+          </div><div className="flex justify-end border-t border-border pt-6"><Button onClick={generate} className="h-auto min-h-12 w-full whitespace-normal px-6 py-3 font-semibold sm:w-auto"><WandSparkles />Generate Adventure Routine</Button></div>
         </section>
 
         {routine && (
           <section id="routine" className="mt-10 scroll-mt-24 space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-display text-2xl font-bold">Today's adventure ✨</h2>
-              <button onClick={copy} className="flex items-center justify-center gap-2 rounded-full border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary hover:text-primary-foreground">
-                📋 Copy Schedule for Caregiver / Obsidian
-              </button>
+              <Button onClick={copy} variant="outline" className="h-auto min-h-11 whitespace-normal py-3"><Copy />Copy Schedule for Caregiver / Obsidian</Button>
             </div>
             <div className="grid gap-5 md:grid-cols-3">
               {routine.activities.map((a, i) => <ActivityCard key={a.title} a={a} age={routine.age} i={i} onComplete={() => setDraft({ activity: a, age: routine.age, energy: routine.energy, env: routine.env, childId: routine.childId })} />)}
@@ -297,9 +275,8 @@ export function Index() {
           </section>
         )}
         </>}
-      </main>
       {draft && <CompletionDialog draft={draft} owner={owner} onClose={() => setDraft(null)} onSave={save} />}
       {tamer && <TantrumTamer onClose={() => setTamer(false)} />}
-    </div>
+    </DashboardShell>
   );
 }

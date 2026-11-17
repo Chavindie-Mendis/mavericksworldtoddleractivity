@@ -35,3 +35,5 @@ use the editor.
 - Validate video MIME type and byte size before previewing and again before persistence; only non-cooldown activity ratings contribute to energy-burn points, not calories.
 
 - Derive sitemap URLs from explicit route staticData decisions; exclude account and recovery screens and omit lastmod without page-specific content timestamps so private workflows never enter discovery.
+
+- Keep dashboard navigation in a presentation shell with collapsible desktop navigation and a mobile sheet; pass view and action callbacks so routine and account state remain owned by the existing screen.

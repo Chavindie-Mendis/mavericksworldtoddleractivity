@@ -32,7 +32,7 @@ export function VideoPlayer({ video }: { video: Blob }) {
     setUrl(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [video]);
-  return url ? <video aria-label="Activity video clip" src={url} controls preload="metadata" className="aspect-video w-full rounded-xl bg-muted object-contain" /> : null;
+  return url ? <video aria-label="Activity video clip" src={url} controls preload="metadata" className="aspect-video w-full rounded-lg bg-muted object-contain" /> : null;
 }
 
 export function VideoUpload({ onSelect, disabled = false }: { onSelect: (file: File) => void; disabled?: boolean }) {
@@ -69,7 +69,7 @@ export function CompletionDialog({ draft, owner, onClose, onSave }: { draft: Com
   const [notes, setNotes] = useState("");
   const [video, setVideo] = useState<File>();
   const [busy, setBusy] = useState(false);
-  return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}><DialogContent className="max-h-[90dvh] overflow-y-auto rounded-2xl">
+  return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}><DialogContent className="max-h-[90dvh] overflow-y-auto rounded-lg">
     <DialogHeader><DialogTitle className="pr-5 font-display text-2xl">Complete activity</DialogTitle><DialogDescription>{draft.activity.icon} {draft.activity.title}</DialogDescription></DialogHeader>
     <form className="space-y-5" onSubmit={async (event) => {
       event.preventDefault();
@@ -97,7 +97,7 @@ export function CompletedHistory({ entries, loading, error, onSave }: { entries:
   const visible = filterHistory(entries, search, stars);
   return <section className="space-y-6">
     <h2 className="font-display text-3xl font-bold">Completed History 📜</h2>
-    <dl className="grid grid-cols-3 gap-3 border-y border-border py-5">
+    <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3 border-y border-border py-5">
       <div><dt className="flex items-center gap-2 text-sm text-muted-foreground"><History />Completed</dt><dd className="mt-2 font-display text-3xl">{entries.length}</dd></div>
       <div><dt className="flex items-center gap-2 text-sm text-muted-foreground"><Flame />Energy burn points</dt><dd className="mt-2 font-display text-3xl">{energyPoints(entries)}</dd></div>
       <div><dt className="flex items-center gap-2 text-sm text-muted-foreground"><Star />Average rating</dt><dd className="mt-2 font-display text-3xl">{entries.length ? (entries.reduce((s, e) => s + e.stars, 0) / entries.length).toFixed(1) : "—"}</dd></div>
@@ -105,7 +105,7 @@ export function CompletedHistory({ entries, loading, error, onSave }: { entries:
     <div className="flex flex-wrap items-center gap-3"><div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input aria-label="Search completed activities" placeholder="Search activities or notes" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" /></div>
       <select aria-label="Filter by rating" value={stars} onChange={(e) => setStars(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm"><option value="all">All ratings</option>{[5,4,3,2,1].map((n) => <option key={n} value={n}>{n} stars</option>)}</select>
     </div>
-    {loading ? <p role="status">Loading history…</p> : error ? <p role="alert" className="text-destructive">{error}</p> : visible.length === 0 ? <div className="py-12 text-center"><Film className="mx-auto mb-4 h-10 w-10 text-primary" /><h3 className="font-display text-xl">{entries.length ? "No matching activities" : "No completed adventures yet"}</h3></div> : <div className="space-y-4">{visible.map((entry) => <article key={entry.id} className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
+    {loading ? <p role="status">Loading history…</p> : error ? <p role="alert" className="text-destructive">{error}</p> : visible.length === 0 ? <div className="py-12 text-center"><Film className="mx-auto mb-4 h-10 w-10 text-primary" /><h3 className="font-display text-xl">{entries.length ? "No matching activities" : "No completed adventures yet"}</h3></div> : <div className="space-y-4">{visible.map((entry) => <article key={entry.id} className="space-y-4 rounded-lg border border-border bg-card p-5 shadow-soft">
       <div className="flex items-start justify-between gap-3"><div className="flex gap-3"><span className="text-3xl" aria-hidden>{entry.activity.icon}</span><div><h3 className="font-display text-xl font-semibold">{entry.activity.title}</h3><time className="text-sm text-muted-foreground" dateTime={entry.completedAt}>{new Date(entry.completedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</time></div></div><span className="shrink-0 font-bold text-primary">★ {entry.stars}/5</span></div>
       <p className="text-xs text-muted-foreground">{AGES.find((a) => a.id === entry.age)?.label} · {ENERGIES.find((e) => e.id === entry.energy)?.label} · {ENVS.find((e) => e.id === entry.env)?.label}</p>
       {entry.notes && <p className="whitespace-pre-wrap break-words">{entry.notes}</p>}

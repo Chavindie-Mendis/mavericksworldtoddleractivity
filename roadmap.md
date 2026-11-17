@@ -1,4 +1,5 @@
 # Requested enhancements
+- [ ] Redesign dashboard menus, pastel theme, typography, and activity presentation; verify desktop and mobile workflows.
 - [x] Fix SEO foundations: homepage heading and social title, sitemap and crawler reference; verify results.
 - [ ] Decide whether to add the suggested indoor toddler activities guide. Blocked: needs approval for new content.
 - [x] Replace demo access with email/password and social accounts, confirmation and password recovery.
